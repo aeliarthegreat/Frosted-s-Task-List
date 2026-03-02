@@ -1,8 +1,7 @@
 local addonName = ...
 
-local BASE_VERSION = "2.1"
-local ALPHA_VERSION = 1
-local DISPLAY_VERSION = string.format("V%sa%d", BASE_VERSION, ALPHA_VERSION)
+local ADDON_VERSION = "2.1a2"
+local DISPLAY_VERSION = "V" .. ADDON_VERSION
 
 FrostedsTaskListDB = FrostedsTaskListDB or {}
 
@@ -304,8 +303,6 @@ f:SetBackdropColor(0, 0, 0, 0.88)
 -- keep current bounds stable for now and revisit in a later pass.
 f:SetMinResize(MIN_W, MIN_H)
 f:SetMaxResize(MAX_W, MAX_H)
--- Engine-level size enforcement
-f:SetResizeBounds(MIN_W, MIN_H, MAX_W, MAX_H)
 
 local _clamping = false
 local function ClampSize()
