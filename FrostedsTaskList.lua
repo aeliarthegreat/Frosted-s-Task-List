@@ -948,8 +948,13 @@ evt:SetScript("OnEvent", function(_, event)
     if not countdownTicker and C_Timer and C_Timer.NewTicker then
       countdownTicker = C_Timer.NewTicker(1, function()
         if f:IsShown() then
-          -- Update timer only when shown; Refresh handles full redraw
-          -- (you can add a visible timer string here if you want)
+          if activeListKey == "day" then
+            resetText:SetText("Reset in " .. FormatDuration(DailySecondsUntilReset()))
+          elseif activeListKey == "week" then
+            resetText:SetText("Reset in " .. FormatDuration(WeeklySecondsUntilReset()))
+          else
+            resetText:SetText("")
+          end
         end
       end)
     end
@@ -960,6 +965,295 @@ evt:SetScript("OnEvent", function(_, event)
     end
   end
 end)
+
+-- =========================================================
+-- Tab click handlers
+-- =========================================================
+local function SwitchTab(key)
+  activeListKey = key
+  FrostedsTaskListDB.activeTab = key
+  SelectTask(nil)
+  UpdateFilterButtons()
+  Refresh()
+end
+
+dailyTab:SetScript("OnClick",  function() SwitchTab("day")       end)
+weeklyTab:SetScript("OnClick", function() SwitchTab("week")      end)
+instTab:SetScript("OnClick",   function() SwitchTab("instances") end)
+miscTab:SetScript("OnClick",   function() SwitchTab("misc")      end)
+
+-- =========================================================
+-- Row pool (reuse frames instead of creating/destroying)
+-- =========================================================
+local rowPool    = {}
+local activeRows = {}
+local ROW_H = 22
+local CAT_H = 20
+
+local function AcquireRow()
+  local r = table.remove(rowPool)
+  if not r then
+    r = CreateFrame("Frame", nil, content)
+  end
+  r:SetParent(content)
+  r:Show()
+  table.insert(activeRows, r)
+  return r
+end
+
+local function ReleaseAllRows()
+  for _, r in ipairs(activeRows) do
+    r:Hide()
+    r:ClearAllPoints()
+    r:EnableMouse(false)
+    r:SetScript("OnMouseDown", nil)
+    r:SetScript("OnEnter",     nil)
+    r:SetScript("OnLeave",     nil)
+    table.insert(rowPool, r)
+  end
+  wipe(activeRows)
+end
+
+-- =========================================================
+-- Refresh (render the task list)
+-- =========================================================
+function Refresh()
+  ReleaseAllRows()
+
+  local list      = GetActiveList()
+  SortListByCategoryPriority(list)
+  local fs        = GetFilterState()
+  local collapsed = GetCollapsedMap()
+  local cW        = content:GetWidth()
+  if cW < 100 then cW = math.max(100, (scroll:GetWidth() or 100) - 18) end
+  local yOff      = 0
+
+  -- Build ordered category list
+  local catOrder = {}
+  local catData  = {}
+  local catSeen  = {}
+  for i = 1, #list do
+    local task = list[i]
+    local ck   = CategoryKey(task.category)
+    if not catSeen[ck] then
+      catSeen[ck] = true
+      table.insert(catOrder, ck)
+      catData[ck] = { name = NormalizeCategory(task.category), all = {} }
+    end
+    table.insert(catData[ck].all, task)
+  end
+
+  local anyVisible = false
+
+  for _, ck in ipairs(catOrder) do
+    local info     = catData[ck]
+    local allTasks = info.all
+
+    local visible = {}
+    for _, t in ipairs(allTasks) do
+      if TaskMatchesFilters(t, fs) then
+        table.insert(visible, t)
+      end
+    end
+
+    if #visible > 0 then
+      anyVisible = true
+
+      local doneCount = 0
+      for _, t in ipairs(allTasks) do if t.done then doneCount = doneCount + 1 end end
+
+      -- ---- Category header ----
+      local hRow = AcquireRow()
+      hRow:SetSize(cW, CAT_H)
+      hRow:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -yOff)
+      hRow:EnableMouse(true)
+
+      if not hRow._catBg then
+        hRow._catBg = hRow:CreateTexture(nil, "BACKGROUND")
+        hRow._catBg:SetAllPoints()
+      end
+      hRow._catBg:SetColorTexture(0.12, 0.12, 0.22, 0.9)
+      hRow._catBg:Show()
+
+      if not hRow._arrow then
+        hRow._arrow = hRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        hRow._arrow:SetSize(14, CAT_H)
+        hRow._arrow:SetPoint("LEFT", 2, 0)
+        hRow._arrow:SetJustifyH("CENTER")
+      end
+      hRow._arrow:SetText(collapsed[ck] and "+" or "-")
+      hRow._arrow:Show()
+
+      if not hRow._catLabel then
+        hRow._catLabel = hRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        hRow._catLabel:SetPoint("LEFT", 18, 0)
+        hRow._catLabel:SetPoint("RIGHT", -4, 0)
+        hRow._catLabel:SetJustifyH("LEFT")
+      end
+      hRow._catLabel:SetText(info.name .. "  |cFFAAAAAA(" .. doneCount .. "/" .. #allTasks .. ")|r")
+      hRow._catLabel:Show()
+
+      -- Hide task-type elements if frame was previously a task row
+      if hRow._selBg   then hRow._selBg:Hide()   end
+      if hRow._check   then hRow._check:Hide()    end
+      if hRow._priLbl  then hRow._priLbl:Hide()   end
+      if hRow._txtLbl  then hRow._txtLbl:Hide()   end
+      if hRow._noteIco then hRow._noteIco:Hide()  end
+      if hRow._delBtn  then hRow._delBtn:Hide()   end
+
+      local capturedCk = ck
+      hRow:SetScript("OnMouseDown", function()
+        collapsed[capturedCk] = not collapsed[capturedCk]
+        Refresh()
+      end)
+
+      yOff = yOff + CAT_H + 2
+
+      -- ---- Task rows (if category not collapsed) ----
+      if not collapsed[ck] then
+        for _, task in ipairs(visible) do
+          local tRow = AcquireRow()
+          tRow:SetSize(cW, ROW_H)
+          tRow:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -yOff)
+          tRow:EnableMouse(true)
+
+          -- Hide header-type elements if frame was previously a header row
+          if tRow._catBg    then tRow._catBg:Hide()    end
+          if tRow._arrow    then tRow._arrow:Hide()    end
+          if tRow._catLabel then tRow._catLabel:Hide() end
+
+          -- Selection highlight
+          if not tRow._selBg then
+            tRow._selBg = tRow:CreateTexture(nil, "BACKGROUND")
+            tRow._selBg:SetAllPoints()
+            tRow._selBg:SetColorTexture(0.3, 0.5, 0.9, 0.25)
+          end
+          tRow._selBg:SetShown(selectedTask == task)
+
+          tRow:SetScript("OnEnter", function(self)
+            if selectedTask ~= task then
+              self._selBg:SetColorTexture(0.3, 0.5, 0.9, 0.12)
+              self._selBg:Show()
+            end
+          end)
+          tRow:SetScript("OnLeave", function(self)
+            self._selBg:SetColorTexture(0.3, 0.5, 0.9, 0.25)
+            self._selBg:SetShown(selectedTask == task)
+          end)
+
+          local capturedTask = task
+          tRow:SetScript("OnMouseDown", function()
+            SelectTask(capturedTask)
+            Refresh()
+          end)
+
+          -- Checkbox
+          if not tRow._check then
+            tRow._check = CreateFrame("CheckButton", nil, tRow, "UICheckButtonTemplate")
+            tRow._check:SetSize(20, 20)
+            tRow._check:SetPoint("LEFT", 2, 0)
+          end
+          tRow._check:Show()
+          tRow._check:SetChecked(task.done)
+          tRow._check:SetScript("OnClick", function(self)
+            task.done = self:GetChecked()
+            if task.done then PlayApplause() end
+            Refresh()
+          end)
+
+          -- Priority label
+          if not tRow._priLbl then
+            tRow._priLbl = tRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            tRow._priLbl:SetSize(26, ROW_H)
+            tRow._priLbl:SetPoint("LEFT", 24, 0)
+            tRow._priLbl:SetJustifyH("LEFT")
+          end
+          tRow._priLbl:Show()
+          local p = tonumber(task.priority) or 0
+          if     p == 1 then tRow._priLbl:SetText("|cFFFF4444P1|r")
+          elseif p == 2 then tRow._priLbl:SetText("|cFFFFAA00P2|r")
+          elseif p == 3 then tRow._priLbl:SetText("|cFFFFFF44P3|r")
+          else               tRow._priLbl:SetText("") end
+
+          -- Task text
+          if not tRow._txtLbl then
+            tRow._txtLbl = tRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            tRow._txtLbl:SetPoint("LEFT", 52, 0)
+            tRow._txtLbl:SetPoint("RIGHT", -54, 0)
+            tRow._txtLbl:SetJustifyH("LEFT")
+            tRow._txtLbl:SetWordWrap(false)
+          end
+          tRow._txtLbl:Show()
+          tRow._txtLbl:SetText(task.done
+            and ("|cFF888888" .. tostring(task.text or "") .. "|r")
+            or  tostring(task.text or ""))
+
+          -- Has-notes indicator
+          if not tRow._noteIco then
+            tRow._noteIco = tRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            tRow._noteIco:SetSize(14, ROW_H)
+            tRow._noteIco:SetPoint("RIGHT", -32, 0)
+            tRow._noteIco:SetJustifyH("CENTER")
+          end
+          tRow._noteIco:Show()
+          tRow._noteIco:SetText(TaskHasNotes(task) and "|cFF88FFFF*|r" or "")
+
+          -- Delete button
+          if not tRow._delBtn then
+            tRow._delBtn = CreateFrame("Button", nil, tRow, "UIPanelButtonTemplate")
+            tRow._delBtn:SetSize(28, 18)
+            tRow._delBtn:SetPoint("RIGHT", -2, 0)
+            tRow._delBtn:SetText("X")
+          end
+          tRow._delBtn:Show()
+          tRow._delBtn:SetScript("OnClick", function()
+            local taskList = FrostedsTaskListDB[activeListKey]
+            local idx = FindTaskIndex(taskList, capturedTask)
+            if idx then table.remove(taskList, idx) end
+            if selectedTask == capturedTask then SelectTask(nil) end
+            Refresh()
+          end)
+
+          yOff = yOff + ROW_H + 2
+        end
+      end
+    end
+  end
+
+  -- Empty state
+  if not anyVisible then
+    local eRow = AcquireRow()
+    eRow:SetSize(cW, 24)
+    eRow:SetPoint("TOPLEFT", content, "TOPLEFT", 4, 0)
+    eRow:EnableMouse(false)
+    if eRow._catBg    then eRow._catBg:Hide()    end
+    if eRow._arrow    then eRow._arrow:Hide()    end
+    if eRow._selBg    then eRow._selBg:Hide()    end
+    if eRow._check    then eRow._check:Hide()    end
+    if eRow._priLbl   then eRow._priLbl:Hide()   end
+    if eRow._noteIco  then eRow._noteIco:Hide()  end
+    if eRow._delBtn   then eRow._delBtn:Hide()   end
+    if not eRow._catLabel then
+      eRow._catLabel = eRow:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+      eRow._catLabel:SetAllPoints()
+      eRow._catLabel:SetJustifyH("LEFT")
+    end
+    eRow._catLabel:SetText("No tasks. Use the field above to add one.")
+    eRow._catLabel:Show()
+    yOff = 26
+  end
+
+  content:SetHeight(math.max(1, yOff))
+
+  -- Update reset timer label
+  if activeListKey == "day" then
+    resetText:SetText("Reset in " .. FormatDuration(DailySecondsUntilReset()))
+  elseif activeListKey == "week" then
+    resetText:SetText("Reset in " .. FormatDuration(WeeklySecondsUntilReset()))
+  else
+    resetText:SetText("")
+  end
+end
 
 -- start hidden
 f:Hide()
