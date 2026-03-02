@@ -12,6 +12,9 @@ local MAX_W, MAX_H = 1600, 1100
 -- =========================================================
 -- Defaults / DB upgrade
 -- =========================================================
+local MIN_W, MIN_H = 860, 470
+local MAX_W, MAX_H = 1600, 1100
+
 local function ApplyDefaults()
   FrostedsTaskListDB.day       = FrostedsTaskListDB.day       or {}
   FrostedsTaskListDB.week      = FrostedsTaskListDB.week      or {}
@@ -301,6 +304,8 @@ f:SetBackdropColor(0, 0, 0, 0.88)
 -- keep current bounds stable for now and revisit in a later pass.
 f:SetMinResize(MIN_W, MIN_H)
 f:SetMaxResize(MAX_W, MAX_H)
+-- Engine-level size enforcement
+f:SetResizeBounds(MIN_W, MIN_H, MAX_W, MAX_H)
 
 local _clamping = false
 local function ClampSize()
@@ -409,6 +414,7 @@ end)
 local function ShowMain()
   f:Show()
   f:Raise()
+  ClampSize()
   FrostedsTaskListDB.shown = true
 end
 
