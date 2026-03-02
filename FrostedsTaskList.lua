@@ -1,6 +1,6 @@
 local addonName = ...
 
-local ADDON_VERSION = "2.1a2"
+local ADDON_VERSION = "2.1a3"
 local DISPLAY_VERSION = "V" .. ADDON_VERSION
 
 FrostedsTaskListDB = FrostedsTaskListDB or {}
@@ -340,8 +340,8 @@ creditText:SetPoint("BOTTOM", f, "BOTTOM", 0, 6)
 creditText:SetJustifyH("CENTER")
 creditText:SetText("by Frosted - Goofdick of Enigma")
 
-local versionText = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-versionText:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 6)
+local versionText = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+versionText:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 12, 34)
 versionText:SetJustifyH("LEFT")
 versionText:SetText(DISPLAY_VERSION)
 

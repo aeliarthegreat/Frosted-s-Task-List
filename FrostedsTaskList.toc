@@ -2,7 +2,7 @@
 ## Title: Frosted's Task List
 ## Notes: In-game task list with priorities, categories, and notes.
 ## Author: Frosted - Goofdick of Enigma
-## Version: 2.1a2
+## Version: 2.1a3
 ## SavedVariables: FrostedsTaskListDB
 
 Bindings.xml
