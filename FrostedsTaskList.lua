@@ -5,6 +5,9 @@ FrostedsTaskListDB = FrostedsTaskListDB or {}
 -- =========================================================
 -- Defaults / DB upgrade
 -- =========================================================
+local MIN_W, MIN_H = 860, 470
+local MAX_W, MAX_H = 1600, 1100
+
 local function ApplyDefaults()
   FrostedsTaskListDB.day       = FrostedsTaskListDB.day       or {}
   FrostedsTaskListDB.week      = FrostedsTaskListDB.week      or {}
@@ -14,8 +17,8 @@ local function ApplyDefaults()
   FrostedsTaskListDB.activeTab = FrostedsTaskListDB.activeTab or "day"
 
   FrostedsTaskListDB.window = FrostedsTaskListDB.window or {}
-  FrostedsTaskListDB.window.width  = math.max(860, FrostedsTaskListDB.window.width  or 880)
-  FrostedsTaskListDB.window.height = math.max(470, FrostedsTaskListDB.window.height or 520)
+  FrostedsTaskListDB.window.width  = math.max(MIN_W, FrostedsTaskListDB.window.width  or 880)
+  FrostedsTaskListDB.window.height = math.max(MIN_H, FrostedsTaskListDB.window.height or 520)
 
   FrostedsTaskListDB.lastDailyKey  = FrostedsTaskListDB.lastDailyKey
   FrostedsTaskListDB.lastWeeklyKey = FrostedsTaskListDB.lastWeeklyKey
@@ -289,9 +292,8 @@ f:SetBackdrop({
 })
 f:SetBackdropColor(0, 0, 0, 0.88)
 
--- Hard minimum size
-local MIN_W, MIN_H = 860, 470
-local MAX_W, MAX_H = 1600, 1100
+-- Engine-level size enforcement
+f:SetResizeBounds(MIN_W, MIN_H, MAX_W, MAX_H)
 
 local _clamping = false
 local function ClampSize()
@@ -395,6 +397,7 @@ end)
 local function ShowMain()
   f:Show()
   f:Raise()
+  ClampSize()
   FrostedsTaskListDB.shown = true
 end
 
