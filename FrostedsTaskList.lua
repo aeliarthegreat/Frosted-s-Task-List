@@ -1,6 +1,6 @@
 local addonName = ...
 
-local ADDON_VERSION = "2.1a3"
+local ADDON_VERSION = "2.1a4"
 local DISPLAY_VERSION = "V" .. ADDON_VERSION
 
 FrostedsTaskListDB = FrostedsTaskListDB or {}
@@ -340,10 +340,17 @@ creditText:SetPoint("BOTTOM", f, "BOTTOM", 0, 6)
 creditText:SetJustifyH("CENTER")
 creditText:SetText("by Frosted - Goofdick of Enigma")
 
-local versionText = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-versionText:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 12, 34)
+local versionLayer = CreateFrame("Frame", nil, f)
+versionLayer:SetAllPoints(f)
+versionLayer:SetFrameStrata("DIALOG")
+versionLayer:SetFrameLevel((f:GetFrameLevel() or 1) + 20)
+
+local versionText = versionLayer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+versionText:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 12, 36)
 versionText:SetJustifyH("LEFT")
 versionText:SetText(DISPLAY_VERSION)
+versionText:SetTextColor(1.0, 0.82, 0.0)
+versionText:SetShadowOffset(1, -1)
 
 -- Resize handle (bottom-right)
 local resizeButton = CreateFrame("Button", nil, f)
