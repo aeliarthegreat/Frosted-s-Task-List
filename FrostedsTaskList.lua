@@ -14,8 +14,8 @@ local function ApplyDefaults()
   FrostedsTaskListDB.activeTab = FrostedsTaskListDB.activeTab or "day"
 
   FrostedsTaskListDB.window = FrostedsTaskListDB.window or {}
-  FrostedsTaskListDB.window.width  = FrostedsTaskListDB.window.width  or 880
-  FrostedsTaskListDB.window.height = FrostedsTaskListDB.window.height or 520
+  FrostedsTaskListDB.window.width  = math.max(860, FrostedsTaskListDB.window.width  or 880)
+  FrostedsTaskListDB.window.height = math.max(470, FrostedsTaskListDB.window.height or 520)
 
   FrostedsTaskListDB.lastDailyKey  = FrostedsTaskListDB.lastDailyKey
   FrostedsTaskListDB.lastWeeklyKey = FrostedsTaskListDB.lastWeeklyKey
