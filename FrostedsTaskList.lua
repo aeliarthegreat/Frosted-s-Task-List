@@ -11,6 +11,9 @@ local MAX_W, MAX_H = 1600, 1100
 -- =========================================================
 -- Defaults / DB upgrade
 -- =========================================================
+local MIN_W, MIN_H = 860, 470
+local MAX_W, MAX_H = 1600, 1100
+
 local function ApplyDefaults()
   FrostedsTaskListDB.day       = FrostedsTaskListDB.day       or {}
   FrostedsTaskListDB.week      = FrostedsTaskListDB.week      or {}
@@ -349,6 +352,18 @@ versionText:SetText(DISPLAY_VERSION)
 versionText:SetTextColor(1.0, 0.82, 0.0)
 versionText:SetShadowOffset(1, -1)
 
+local versionLayer = CreateFrame("Frame", nil, f)
+versionLayer:SetAllPoints(f)
+versionLayer:SetFrameStrata("DIALOG")
+versionLayer:SetFrameLevel((f:GetFrameLevel() or 1) + 20)
+
+local versionText = versionLayer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+versionText:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 12, 36)
+versionText:SetJustifyH("LEFT")
+versionText:SetText(DISPLAY_VERSION)
+versionText:SetTextColor(1.0, 0.82, 0.0)
+versionText:SetShadowOffset(1, -1)
+
 -- Resize handle (bottom-right)
 local resizeButton = CreateFrame("Button", nil, f)
 resizeButton:SetSize(18, 18)
@@ -415,6 +430,7 @@ end)
 local function ShowMain()
   f:Show()
   f:Raise()
+  ClampSize()
   FrostedsTaskListDB.shown = true
 end
 
