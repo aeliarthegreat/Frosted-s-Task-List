@@ -1,6 +1,13 @@
 local addonName = ...
 
+local BASE_VERSION = "2.1"
+local ALPHA_VERSION = 1
+local DISPLAY_VERSION = string.format("V%sa%d", BASE_VERSION, ALPHA_VERSION)
+
 FrostedsTaskListDB = FrostedsTaskListDB or {}
+
+local MIN_W, MIN_H = 860, 470
+local MAX_W, MAX_H = 1600, 1100
 
 -- =========================================================
 -- Defaults / DB upgrade
@@ -14,8 +21,8 @@ local function ApplyDefaults()
   FrostedsTaskListDB.activeTab = FrostedsTaskListDB.activeTab or "day"
 
   FrostedsTaskListDB.window = FrostedsTaskListDB.window or {}
-  FrostedsTaskListDB.window.width  = math.max(860, FrostedsTaskListDB.window.width  or 880)
-  FrostedsTaskListDB.window.height = math.max(470, FrostedsTaskListDB.window.height or 520)
+  FrostedsTaskListDB.window.width  = math.max(MIN_W, FrostedsTaskListDB.window.width  or 880)
+  FrostedsTaskListDB.window.height = math.max(MIN_H, FrostedsTaskListDB.window.height or 520)
 
   FrostedsTaskListDB.lastDailyKey  = FrostedsTaskListDB.lastDailyKey
   FrostedsTaskListDB.lastWeeklyKey = FrostedsTaskListDB.lastWeeklyKey
@@ -290,8 +297,10 @@ f:SetBackdrop({
 f:SetBackdropColor(0, 0, 0, 0.88)
 
 -- Hard minimum size
-local MIN_W, MIN_H = 860, 470
-local MAX_W, MAX_H = 1600, 1100
+-- Known issue: window sizing behavior still needs follow-up tuning;
+-- keep current bounds stable for now and revisit in a later pass.
+f:SetMinResize(MIN_W, MIN_H)
+f:SetMaxResize(MAX_W, MAX_H)
 
 local _clamping = false
 local function ClampSize()
@@ -328,6 +337,11 @@ local creditText = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 creditText:SetPoint("BOTTOM", f, "BOTTOM", 0, 6)
 creditText:SetJustifyH("CENTER")
 creditText:SetText("by Frosted - Goofdick of Enigma")
+
+local versionText = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+versionText:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 6)
+versionText:SetJustifyH("LEFT")
+versionText:SetText(DISPLAY_VERSION)
 
 -- Resize handle (bottom-right)
 local resizeButton = CreateFrame("Button", nil, f)
