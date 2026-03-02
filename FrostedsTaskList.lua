@@ -11,6 +11,9 @@ local MAX_W, MAX_H = 1600, 1100
 -- =========================================================
 -- Defaults / DB upgrade
 -- =========================================================
+local MIN_W, MIN_H = 860, 470
+local MAX_W, MAX_H = 1600, 1100
+
 local function ApplyDefaults()
   FrostedsTaskListDB.day       = FrostedsTaskListDB.day       or {}
   FrostedsTaskListDB.week      = FrostedsTaskListDB.week      or {}
@@ -408,6 +411,7 @@ end)
 local function ShowMain()
   f:Show()
   f:Raise()
+  ClampSize()
   FrostedsTaskListDB.shown = true
 end
 
