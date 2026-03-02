@@ -1,0 +1,9 @@
+## Interface: 110000
+## Title: Frosted's Task List
+## Notes: In-game task list with priorities, categories, and notes.
+## Author: Frosted - Goofdick of Enigma
+## Version: 2.1
+## SavedVariables: FrostedsTaskListDB
+
+Bindings.xml
+FrostedsTaskList.lua

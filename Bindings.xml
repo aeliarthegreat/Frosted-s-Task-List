@@ -1,0 +1,5 @@
+<Bindings>
+  <Binding name="FROSTEDSTASKLIST_TOGGLE" header="Frosted's Task List">
+    FrostedsTaskList_Toggle()
+  </Binding>
+</Bindings>
