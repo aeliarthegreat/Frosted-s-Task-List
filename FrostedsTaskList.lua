@@ -290,7 +290,7 @@ f:SetBackdrop({
 f:SetBackdropColor(0, 0, 0, 0.88)
 
 -- Hard minimum size
-local MIN_W, MIN_H = 820, 470
+local MIN_W, MIN_H = 860, 470
 local MAX_W, MAX_H = 1600, 1100
 
 local _clamping = false
